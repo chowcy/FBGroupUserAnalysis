@@ -5,12 +5,14 @@ import json
 import requests
 import sys
 
-FB_GROUP_ID = '1461410160598241'
+FB_GROUP_ID = '1579487388953949'
 FB_BASEURL = "https://graph.facebook.com/v2.10/{}/feed".format(FB_GROUP_ID)
+
+CACHE_FNAME = 'cache.json'
 
 # get access token from
 # https://developers.facebook.com/tools/explorer"
-access_token = None
+access_token = 'EAACEdEose0cBANH4nL8OrCMNUU8YEnNZAI4Ju026bfS7ZBjTbQ1ZC1UpUwZB3rQnVuLgbymYTjXyBXNEstVgXCFpNaUuJyFytBZA4yZCayaadpXdjPUw4ZBYgZCufDjWnZBwFZCwVaDglPu6dV0BW1o2guUEVPmZAudwiTvMfzzxD2UdE9xREDtStUx7ZAkpkC4RrMoZD'
 
 if access_token == None:
     access_token = raw_input("\nCopy and paste token from https://developers.facebook.com/tools/explorer\n>  ")
@@ -21,7 +23,6 @@ def pretty(obj):
     return json.dumps(obj, sort_keys=True, indent=2)
 
 #open cache file
-CACHE_FNAME = 'cache.json'
 try:
     cache_file = open(CACHE_FNAME, 'r')
     cache_contents = cache_file.read()
@@ -48,7 +49,7 @@ def getWithCaching(baseURL, params={}):
         cache_file.close()
 
     # if fullURL WAS in the cache, CACHE_DICTION[fullURL] already had a value
-    # if fullRUL was NOT in the cache, we just set it in the if block above, so it's there now
+    # if fullURL was NOT in the cache, we just set it in the if block above, so it's there now
     return CACHE_DICTION[fullURL]
 
 # Building the Facebook parameters dictionary
@@ -72,7 +73,7 @@ class Comment():
         else:
             self.comment = ''
         if 'comments' in comment_dict:
-            #comment class inception
+            #comment class inception. Each subcomment is an instance of Comment class
             self.subcomments = [Comment(comment) for comment in comment_dict['comments']['data']]
             if 'likes' in self.subcomments:
                 self.sublikes = self.subcomments['likes']['data']
@@ -88,7 +89,6 @@ class Comment():
 
 #class definition of a post
 class Post():
-    '''object representing post'''
     #initialize posts's poster, message, comments, likes, comment count and like count
     def __init__(self, post_dict={}):
         if 'from' in post_dict:
@@ -189,12 +189,12 @@ for post in post_insts:
                     users[sublike['name']]['likes'] += 1
 
 #write big user dictionary to json file
-f = open('fb106f17_user_data.json', 'w')
+f = open('fbgroup_user_data.json', 'w')
 f.write(json.dumps(users))
 f.close()
 
 #REPORT ANALYSIS
-f = open('fb106f17_report.txt', 'w')
+f = open('fbgroup_report.txt', 'w')
 f.write('=' * 20)
 f.write('\nTop 15 people who wrote posts\n')
 f.write('=' * 20)
