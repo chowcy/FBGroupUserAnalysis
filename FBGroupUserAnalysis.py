@@ -1,26 +1,23 @@
-#Program to find data on users in the SI 106 Fall 2017 Facebook group
-#found at https://www.facebook.com/groups/1461410160598241
+#Program to find data on users in a Facebook group you have privileges for
 
 import json
 import requests
 import sys
 
-FB_GROUP_ID = '1579487388953949'
-FB_BASEURL = "https://graph.facebook.com/v2.10/{}/feed".format(FB_GROUP_ID)
-
-CACHE_FNAME = 'cache.json'
-
+#TODO: fill in the FB_GROUP_ID and your access token
+FB_GROUP_ID = ''
 # get access token from
 # https://developers.facebook.com/tools/explorer"
-access_token = 'EAACEdEose0cBANH4nL8OrCMNUU8YEnNZAI4Ju026bfS7ZBjTbQ1ZC1UpUwZB3rQnVuLgbymYTjXyBXNEstVgXCFpNaUuJyFytBZA4yZCayaadpXdjPUw4ZBYgZCufDjWnZBwFZCwVaDglPu6dV0BW1o2guUEVPmZAudwiTvMfzzxD2UdE9xREDtStUx7ZAkpkC4RrMoZD'
-
+access_token = None
 if access_token == None:
     access_token = raw_input("\nCopy and paste token from https://developers.facebook.com/tools/explorer\n>  ")
 
+FB_BASEURL = "https://graph.facebook.com/v2.10/{}/feed".format(FB_GROUP_ID)
+CACHE_FNAME = 'cache.json'
 
-#function that prints json nicely
+#function that prints json nicely (for debugging only)
 def pretty(obj):
-    return json.dumps(obj, sort_keys=True, indent=2)
+    return json.dumps(obj, sort_keys = True, indent = 2)
 
 #open cache file
 try:
@@ -32,7 +29,7 @@ except:
     CACHE_DICTION = {}
 
 #function gets data from caching or API
-def getWithCaching(baseURL, params={}):
+def getWithCaching(baseURL, params = {}):
     req = requests.Request(method = 'GET', url = baseURL, params = sorted(params.items()))
     prepped = req.prepare()
     fullURL = prepped.url
@@ -91,28 +88,35 @@ class Comment():
 class Post():
     #initialize posts's poster, message, comments, likes, comment count and like count
     def __init__(self, post_dict={}):
+        #who posted stores a string into self.poster
         if 'from' in post_dict:
             self.poster = post_dict['from']['name']
         else:
             self.poster = ''
+        #the text of the post is stored as a string into self.message
         if 'message' in post_dict:
             self.message = post_dict['message']
         else:
             self.message = ''
+        #the text of comments to the post are stored as a list of Comment instances into self.comments
         if 'comments' in post_dict:
             self.comments = [Comment(comment) for comment in post_dict['comments']['data']]
         else:
             self.comments = []
+        #the names of people who liked the post are stored as a list into self.likes
         if 'likes' in post_dict:
             self.likes = post_dict['likes']['data']
         else:
             self.likes = []
+        #store the number of comments and likes this post has
         self.comment_count = len(self.comments)
         self.like_count = len(self.likes)
 
+    #returns a list of the names of people who commented on the post
     def getCommenters(self):
         return [commenter['from']['name'] for commenter in self.comments if 'from' in commenter]
 
+    #returns a list of the names of people who liked the post
     def getLikers(self):
         return [liker['name']for liker in self.likes]
 
@@ -131,12 +135,15 @@ except:
     sys.exit(0)
 
 #create large user dictionary with the key being the name of a user who has interacted
-#in the group, and the value is some data about this user
+#in the group, and the value is data about this user: their posts, their comments,
+#how many times they liked things, and how many times their posts/comments were liked by others
 users = {}
+
+#look at every post in the group's feed to extract information about users
 for post in post_insts:
     #add user to dictionary and add in post message data
     if post.poster not in users:
-        users[post.poster] = {'posts': [post.message], 'comments':[], 'likes': 0, 'liked':0}
+        users[post.poster] = {'posts': [post.message], 'comments': [], 'likes': 0, 'liked': 0}
     else:
         users[post.poster]['posts'].append(post.message)
 
@@ -147,7 +154,7 @@ for post in post_insts:
     for like_info in post.likes:
         #update users that liked the post
         if like_info['name'] not in users:
-            users[like_info['name']] = {'posts': [], 'comments':[], 'likes': 1, 'liked':0}
+            users[like_info['name']] = {'posts': [], 'comments': [], 'likes': 1, 'liked': 0}
         else:
             users[like_info['name']]['likes'] += 1
 
@@ -156,7 +163,7 @@ for post in post_insts:
         #add commenter if not in users
         commenter = comment.commenter
         if commenter not in users:
-            users[commenter] = {'posts': [], 'comments':[comment.comment], 'likes': 0, 'liked':0}
+            users[commenter] = {'posts': [], 'comments': [comment.comment], 'likes': 0, 'liked': 0}
         else:
             users[commenter]['comments'].append(comment.comment)
 
@@ -166,7 +173,7 @@ for post in post_insts:
         for like_info in comment.likes:
             #update users that liked the comment
             if like_info['name'] not in users:
-                users[like_info['name']] = {'posts': [], 'comments':[], 'likes': 1, 'liked':0}
+                users[like_info['name']] = {'posts': [], 'comments': [], 'likes': 1, 'liked': 0}
             else:
                 users[like_info['name']]['likes'] += 1
 
@@ -174,7 +181,7 @@ for post in post_insts:
         for subcomment in comment.subcomments:
             #updates users that commented on the comment
             if subcomment.commenter not in users:
-                users[subcomment.commenter] = {'posts': [], 'comments':[subcomment.comment], 'likes': 0, 'liked':0}
+                users[subcomment.commenter] = {'posts': [], 'comments': [subcomment.comment], 'likes': 0, 'liked': 0}
             else:
                 users[subcomment.commenter]['comments'].append(subcomment.comment)
             #update liked values for this comment if it is liked
@@ -184,7 +191,7 @@ for post in post_insts:
             for sublike in subcomment.likes:
                 #update users that liked the subcomment
                 if sublike['name'] not in users:
-                    users[sublike['name']] = {'posts': [], 'comments':[], 'likes': 1, 'liked':0}
+                    users[sublike['name']] = {'posts': [], 'comments': [], 'likes': 1, 'liked': 0}
                 else:
                     users[sublike['name']]['likes'] += 1
 
